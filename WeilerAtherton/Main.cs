@@ -74,8 +74,6 @@ namespace WeilerAtherton
             List<DeepPoint> deepShape = new List<DeepPoint>(Array.ConvertAll(shape, p => new DeepPoint(p, DeepPoint.PointType.Normal, p.InOrOut(clip))));
             List<DeepPoint> deepClip = new List<DeepPoint>(Array.ConvertAll(shape, p => new DeepPoint(p, DeepPoint.PointType.Normal, p.InOrOut(shape))));
 
-            //TODO: make a dictionary to get an intersection (DeepPoint) from two lines (4 DeepPoints) to ensure we don't get precision errors
-
             for (int i = 0; i < deepShape.Count; i++)
             {
                 DeepPoint p1 = deepShape[i];
@@ -89,7 +87,7 @@ namespace WeilerAtherton
 
                     if (Line.HasIntersection(p1, p2, c1, c2))
                     {
-                        //This ensures that we have the same intersection added to both
+                        //This ensures that we have the same intersection added to both (avoid precision errors)
                         DeepPoint intersection = new DeepPoint(Line.Intersection(p1, p2, c1, c2), DeepPoint.PointType.Intersection, DeepPoint.PointStatus.Undetermined);
                         p1.intersections.Add(intersection);
                         c1.intersections.Add(intersection);
@@ -116,7 +114,6 @@ namespace WeilerAtherton
                     else intersection.status = DeepPoint.PointStatus.In; //set inter as In
                 }
             }
-            //TODO: put above for loop into a method and run it with shape/clip reversed????
 
             //sort all intersections in clip
             for(int i = 0; i < deepClip.Count; i++)
