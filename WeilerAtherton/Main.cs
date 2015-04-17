@@ -99,15 +99,18 @@ namespace WeilerAtherton
                 //sort intersections by distance to p1
                 p1.SortIntersections();
 
+                
                 //loop through intersections between p1 and p2
                 for(int j = 0; j < p1.intersections.Count; j++)
                 {
+                    //TODO: test that changing intersection.status affects the intersection in clip as well
                     DeepPoint intersection = p1.intersections[j];
+
                     //if there's a previous intersection
                     if(j>0)
                     {
                         if (p1.intersections[j-1].status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter pStatus to Out
-                        else intersection.status = DeepPoint.PointStatus.In; //TODO: set inter as In
+                        else intersection.status = DeepPoint.PointStatus.In; //set inter as In
                     }
                     else if(p1.status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter as Out
                     else intersection.status = DeepPoint.PointStatus.In; //set inter as In
