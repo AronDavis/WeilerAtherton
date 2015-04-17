@@ -71,13 +71,15 @@ namespace WeilerAtherton
 
         private void doClip(PointF[] clip, PointF[] shape)
         {
-            //TODO: instead of lists use a custom collection
+            //TODO: use dictionaries to jump between lists...it will give you the index of where to go from one to the other
             List<DeepPoint> deepShape = new List<DeepPoint>();
             List<DeepPoint> deepClip = new List<DeepPoint>();
 
             //Use these to jump from list to list
             Dictionary<DeepPoint, int> intersectionToClipIndex;
             Dictionary<DeepPoint, int> intersectionToShapeIndex;
+
+            //TODO: make a dictionary to get an intersection (DeepPoint) from two lines (4 DeepPoints) to ensure we don't get precision errors
 
             for(int i = 0; i < shape.Length; i++)
             {
@@ -103,6 +105,7 @@ namespace WeilerAtherton
                 }
 
                 //TODO: sort intersections between point 1 and point 2 by proximity to point1
+                //TODO: more intersections to be in deepShape, after point1
                 
                 //IMPLEMENT SORT HERE <-------
 
@@ -121,7 +124,6 @@ namespace WeilerAtherton
                 }
             }
             //TODO: put above for loop into a method and run it with shape/clip reversed
-
 
             List<List<PointF>> output = new List<List<PointF>>();
             List<PointF> currentShape = new List<PointF>();
