@@ -8,6 +8,9 @@ namespace WeilerAtherton
     {
         public static DeepPoint.PointStatus InOrOut(this PointF point, PointF[] shape)
         {
+            //TODO: implement this
+            throw new NotImplementedException("InOrOut Extension");
+
             return DeepPoint.PointStatus.Undetermined;
         }
     }
