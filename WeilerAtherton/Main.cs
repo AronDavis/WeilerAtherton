@@ -79,10 +79,8 @@ namespace WeilerAtherton
                 PointF p1 = shape[i];
                 PointF p2 = shape[(i + 1) % shape.Length];
 
-                //TODO: detect in or out, don't just blanket "IN"
-                DeepPoint p1Deep = new DeepPoint(p1, DeepPoint.PointType.Normal, DeepPoint.PointStatus.In);
-                
-                
+                DeepPoint p1Deep = new DeepPoint(p1, DeepPoint.PointType.Normal, p1.InOrOut(clip));
+                  
                 deepShape.Add(p1Deep);
 
                 //check for intersections
@@ -121,7 +119,7 @@ namespace WeilerAtherton
             List<List<PointF>> output = new List<List<PointF>>();
             List<PointF> currentShape = new List<PointF>();
 
-            //TODO: start from entering point
+            //TODO: start from first entering point (and do this for all entering points)
 
             for(int i = 0; i < deepShape.Count; i++)
             {
