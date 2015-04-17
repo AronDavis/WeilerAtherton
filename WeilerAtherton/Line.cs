@@ -27,10 +27,10 @@ namespace WeilerAtherton
             return new PointF();
         }
 
-        public static DeepPoint Intersection(DeepPoint start1, DeepPoint end1, DeepPoint start2, DeepPoint end2)
+        public static PointF Intersection(DeepPoint start1, DeepPoint end1, DeepPoint start2, DeepPoint end2)
         {
             throw new NotImplementedException();
-            return new DeepPoint();
+            return new PointF();
         }
     }
 }
