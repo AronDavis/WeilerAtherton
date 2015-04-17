@@ -89,16 +89,15 @@ namespace WeilerAtherton
 
                     if (Line.HasIntersection(p1, p2, c1, c2))
                     {
-                        PointF intersection = Line.Intersection(p1, p2, c1, c2);
-                        p1.AddIntersection(new DeepPoint(intersection, DeepPoint.PointType.Intersection, DeepPoint.PointStatus.Undetermined));
-                        //TODO: also add to c1Deep
+                        //This ensures that we have the same intersection added to both
+                        DeepPoint intersection = new DeepPoint(Line.Intersection(p1, p2, c1, c2), DeepPoint.PointType.Intersection, DeepPoint.PointStatus.Undetermined);
+                        p1.intersections.Add(intersection);
+                        c1.intersections.Add(intersection);
                     }
                 }
 
-                //TODO: sort intersections between point 1 and point 2 by proximity to point1
-                //TODO: more intersections to be in deepShape, after point1
-                
-                //IMPLEMENT SORT HERE <-------
+                //sort intersections by distance to p1
+                p1.SortIntersections();
 
                 //loop through intersections between p1 and p2
                 for(int j = 0; j < p1.intersections.Count; j++)
@@ -114,7 +113,13 @@ namespace WeilerAtherton
                     else intersection.status = DeepPoint.PointStatus.In; //set inter as In
                 }
             }
-            //TODO: put above for loop into a method and run it with shape/clip reversed
+            //TODO: put above for loop into a method and run it with shape/clip reversed????
+
+            //sort all intersections in clip
+            for(int i = 0; i < deepClip.Count; i++)
+            {
+                deepClip[i].SortIntersections();
+            }
 
             List<List<PointF>> output = new List<List<PointF>>();
             List<PointF> currentShape = new List<PointF>();
