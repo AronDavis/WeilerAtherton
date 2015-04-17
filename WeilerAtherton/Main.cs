@@ -72,34 +72,26 @@ namespace WeilerAtherton
         private void doClip(PointF[] clip, PointF[] shape)
         {
             //TODO: use dictionaries to jump between lists...it will give you the index of where to go from one to the other
-            List<DeepPoint> deepShape = new List<DeepPoint>();
-            List<DeepPoint> deepClip = new List<DeepPoint>();
-
-            //Use these to jump from list to list
-            Dictionary<DeepPoint, int> intersectionToClipIndex;
-            Dictionary<DeepPoint, int> intersectionToShapeIndex;
+            List<DeepPoint> deepShape = new List<DeepPoint>(Array.ConvertAll(shape, p => new DeepPoint(p, DeepPoint.PointType.Normal, p.InOrOut(clip))));
+            List<DeepPoint> deepClip = new List<DeepPoint>(Array.ConvertAll(shape, p => new DeepPoint(p, DeepPoint.PointType.Normal, p.InOrOut(shape))));
 
             //TODO: make a dictionary to get an intersection (DeepPoint) from two lines (4 DeepPoints) to ensure we don't get precision errors
 
-            for(int i = 0; i < shape.Length; i++)
+            for (int i = 0; i < deepShape.Count; i++)
             {
-                PointF p1 = shape[i];
-                PointF p2 = shape[(i + 1) % shape.Length];
-
-                DeepPoint p1Deep = new DeepPoint(p1, DeepPoint.PointType.Normal, p1.InOrOut(clip));
-                  
-                deepShape.Add(p1Deep);
+                DeepPoint p1 = deepShape[i];
+                DeepPoint p2 = deepShape[(i + 1) % deepShape.Count];
 
                 //check for intersections
-                for(int j = 0; j < clip.Length; j++)
+                for (int j = 0; j < deepClip.Count; j++)
                 {
-                    PointF c1 = clip[j];
-                    PointF c2 = clip[(j + 1) % clip.Length];
+                    DeepPoint c1 = deepClip[j];
+                    DeepPoint c2 = deepClip[(j + 1) % deepClip.Count];
 
                     if (Line.HasIntersection(p1, p2, c1, c2))
                     {
                         PointF intersection = Line.Intersection(p1, p2, c1, c2);
-                        p1Deep.AddIntersection(new DeepPoint(intersection, DeepPoint.PointType.Intersection, DeepPoint.PointStatus.Undetermined));
+                        p1.AddIntersection(new DeepPoint(intersection, DeepPoint.PointType.Intersection, DeepPoint.PointStatus.Undetermined));
                         //TODO: also add to c1Deep
                     }
                 }
@@ -110,16 +102,16 @@ namespace WeilerAtherton
                 //IMPLEMENT SORT HERE <-------
 
                 //loop through intersections between p1 and p2
-                for(int j = 0; j < p1Deep.intersections.Count; j++)
+                for(int j = 0; j < p1.intersections.Count; j++)
                 {
-                    DeepPoint intersection = p1Deep.intersections[j];
+                    DeepPoint intersection = p1.intersections[j];
                     //if there's a previous intersection
                     if(j>0)
                     {
-                        if (p1Deep.intersections[j-1].status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter pStatus to Out
+                        if (p1.intersections[j-1].status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter pStatus to Out
                         else intersection.status = DeepPoint.PointStatus.In; //TODO: set inter as In
                     }
-                    else if(p1Deep.status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter as Out
+                    else if(p1.status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter as Out
                     else intersection.status = DeepPoint.PointStatus.In; //set inter as In
                 }
             }
@@ -128,23 +120,27 @@ namespace WeilerAtherton
             List<List<PointF>> output = new List<List<PointF>>();
             List<PointF> currentShape = new List<PointF>();
 
-            //start from first entering point
-            List<int> iNormals = new List<int>();
-            List<int> iIntersections = new List<int>();
+            IntegrateIntersections(ref deepShape);
+            IntegrateIntersections(ref deepClip);
 
+            //Use these to jump from list to list
+            Dictionary<DeepPoint, int> shapeIntersectionToClipIndex = new Dictionary<DeepPoint, int>();
+            Dictionary<DeepPoint, int> clipIntersectionToShapeIndex = new Dictionary<DeepPoint, int>();
+            BuildIntersectionMap(ref shapeIntersectionToClipIndex, deepShape, ref clipIntersectionToShapeIndex, deepClip);
+
+            //start from entering points
+            List<int> iEntering = new List<int>();
+
+            //Get entering intersections
             for (int i = 0; i < deepShape.Count; i++)
             {
-                DeepPoint deepP = deepShape[i];
-                for (int j = 0; j < deepP.intersections.Count; j++)
-                {
-                    DeepPoint intersection = deepP.intersections[j];
-                    if (intersection.status == DeepPoint.PointStatus.In)
-                    {
-                        iNormals.Add(i);
-                        iIntersections.Add(j);
-                    }
-                }
+                DeepPoint point = deepShape[i];
+                if(point.type == DeepPoint.PointType.Intersection && point.status == DeepPoint.PointStatus.In)
+                    iEntering.Add(i);
             }
+
+            //TODO: implement this into a loop of sorts + check if count > 0
+            int goToIndex = iEntering[0]; //should be set to loop through these points
 
             for (int i = 0; i < deepShape.Count; i++)
             {
@@ -162,8 +158,8 @@ namespace WeilerAtherton
                         //point2 must be heading outwards
                         if (p2.type == DeepPoint.PointType.Intersection)
                         {
-                            //go to clipPoints loop and start from after point1
-                            //could be done with a method
+                            //go to clipPoints loop and start from intersection
+                            goToIndex = shapeIntersectionToClipIndex[p2];
                             break;
                         }
                     }
@@ -181,10 +177,11 @@ namespace WeilerAtherton
                     //we must add point 1 since it's on the border
                     currentShape.Add(p1.p);
 
+                    //exiting
                     if (p1.status == DeepPoint.PointStatus.Out)
                     {
-                        //go to clipPoints loop and start from after point1;
-                        //could be done with a method
+                        //go to clipPoints loop and start from after intersection;
+                        goToIndex = (shapeIntersectionToClipIndex[p1]+1) % deepClip.Count;
                         break;
                     }
                 }
@@ -208,6 +205,7 @@ namespace WeilerAtherton
                     if(p1.status == DeepPoint.PointStatus.In)
                     {
                         //go to shapePoints loop and start from after point1
+                        goToIndex = (clipIntersectionToShapeIndex[p1] + 1) % deepShape.Count;
                         break;
                     }
                 }
@@ -225,5 +223,37 @@ namespace WeilerAtherton
             } //end deepClip for
 
         } //end doClip
+
+        //TODO: test this
+        private void IntegrateIntersections(ref List<DeepPoint> list)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                DeepPoint normal = list[i];
+                for (int j = 0; j < normal.intersections.Count; j++)
+                {
+                    DeepPoint intersection = normal.intersections[j];
+
+                    list.Insert(i+1, intersection);
+                    i++;
+                }
+            }
+        }
+
+        //TODO: test
+        private void BuildIntersectionMap(ref Dictionary<DeepPoint, int> fromMap, List<DeepPoint> from, ref Dictionary<DeepPoint, int> toMap, List<DeepPoint> to)
+        {
+            for (int i = 0; i < from.Count; i++)
+            {
+                DeepPoint point = from[i];
+
+                if (point.type == DeepPoint.PointType.Intersection)
+                {
+                    //we can do both at once since we should have the same number of intersections
+                    fromMap.Add(point, to.IndexOf(point));
+                    toMap.Add(point, i);
+                }
+            }
+        }
     }
 }
