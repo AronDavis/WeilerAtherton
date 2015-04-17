@@ -37,9 +37,12 @@ namespace WeilerAtherton
             intersections = new List<DeepPoint>();
         }
 
-        public void AddIntersection(DeepPoint inter)
+        public void SortIntersections()
         {
-            throw new NotImplementedException("add intersection in DeepPoint");
+            if (intersections.Count <= 1) return;
+
+            throw new NotImplementedException();
+            //sort
         }
     }
 }
