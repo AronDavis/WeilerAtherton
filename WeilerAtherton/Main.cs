@@ -71,8 +71,13 @@ namespace WeilerAtherton
 
         private void doClip(PointF[] clip, PointF[] shape)
         {
+            //TODO: instead of lists use a custom collection
             List<DeepPoint> deepShape = new List<DeepPoint>();
             List<DeepPoint> deepClip = new List<DeepPoint>();
+
+            //Use these to jump from list to list
+            Dictionary<DeepPoint, int> intersectionToClipIndex;
+            Dictionary<DeepPoint, int> intersectionToShapeIndex;
 
             for(int i = 0; i < shape.Length; i++)
             {
@@ -91,8 +96,9 @@ namespace WeilerAtherton
 
                     if (Line.HasIntersection(p1, p2, c1, c2))
                     {
-                        //TODO: add specifically to an intersections section
-                        deepShape.Add(new DeepPoint(Line.Intersection(p1, p2, c1, c2), DeepPoint.PointType.Intersection, DeepPoint.PointStatus.Undetermined));
+                        PointF intersection = Line.Intersection(p1, p2, c1, c2);
+                        p1Deep.AddIntersection(new DeepPoint(intersection, DeepPoint.PointType.Intersection, DeepPoint.PointStatus.Undetermined));
+                        //TODO: also add to c1Deep
                     }
                 }
 
@@ -101,16 +107,17 @@ namespace WeilerAtherton
                 //IMPLEMENT SORT HERE <-------
 
                 //loop through intersections between p1 and p2
-                for(int j = 0; j < 0; j++)
+                for(int j = 0; j < p1Deep.intersections.Count; j++)
                 {
+                    DeepPoint intersection = p1Deep.intersections[j];
                     //if there's a previous intersection
                     if(j>0)
                     {
-                        if (false/*[j-1] prevInt is going In*/) ; //TODO: set inter pStatus to Out
-                        else ; //TODO: set inter as In
+                        if (p1Deep.intersections[j-1].status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter pStatus to Out
+                        else intersection.status = DeepPoint.PointStatus.In; //TODO: set inter as In
                     }
-                    else if(p1Deep.status == DeepPoint.PointStatus.In) ; //set inter as Out
-                    else ; //set inter as In
+                    else if(p1Deep.status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter as Out
+                    else intersection.status = DeepPoint.PointStatus.In; //set inter as In
                 }
             }
             //TODO: put above for loop into a method and run it with shape/clip reversed
@@ -119,23 +126,39 @@ namespace WeilerAtherton
             List<List<PointF>> output = new List<List<PointF>>();
             List<PointF> currentShape = new List<PointF>();
 
-            //TODO: start from first entering point (and do this for all entering points)
+            //start from first entering point
+            List<int> iNormals = new List<int>();
+            List<int> iIntersections = new List<int>();
 
-            for(int i = 0; i < deepShape.Count; i++)
+            for (int i = 0; i < deepShape.Count; i++)
+            {
+                DeepPoint deepP = deepShape[i];
+                for (int j = 0; j < deepP.intersections.Count; j++)
+                {
+                    DeepPoint intersection = deepP.intersections[j];
+                    if (intersection.status == DeepPoint.PointStatus.In)
+                    {
+                        iNormals.Add(i);
+                        iIntersections.Add(j);
+                    }
+                }
+            }
+
+            for (int i = 0; i < deepShape.Count; i++)
             {
                 DeepPoint p1 = deepShape[i];
                 DeepPoint p2 = deepShape[(i + 1) % deepShape.Count];
 
-                if(p1.type == DeepPoint.PointType.Normal)
+                if (p1.type == DeepPoint.PointType.Normal)
                 {
-                    if(p1.status == DeepPoint.PointStatus.In)
+                    if (p1.status == DeepPoint.PointStatus.In)
                     {
                         //break when we get back to start
-                        if(currentShape[0] == p1.p)break;
+                        if (currentShape[0] == p1.p) break;
                         currentShape.Add(p1.p);
 
                         //point2 must be heading outwards
-                        if(p2.type == DeepPoint.PointType.Intersection)
+                        if (p2.type == DeepPoint.PointType.Intersection)
                         {
                             //go to clipPoints loop and start from after point1
                             //could be done with a method
@@ -151,10 +174,10 @@ namespace WeilerAtherton
                 else //p1 is an intersection
                 {
                     //break when we get back to start
-                    if(currentShape[0] == p1.p) break;
+                    if (currentShape[0] == p1.p) break;
 
-		            //we must add point 1 since it's on the border
-		            currentShape.Add(p1.p);
+                    //we must add point 1 since it's on the border
+                    currentShape.Add(p1.p);
 
                     if (p1.status == DeepPoint.PointStatus.Out)
                     {
