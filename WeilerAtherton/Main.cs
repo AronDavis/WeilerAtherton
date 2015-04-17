@@ -71,7 +71,6 @@ namespace WeilerAtherton
 
         private void doClip(PointF[] clip, PointF[] shape)
         {
-            //TODO: use dictionaries to jump between lists...it will give you the index of where to go from one to the other
             List<DeepPoint> deepShape = new List<DeepPoint>(Array.ConvertAll(shape, p => new DeepPoint(p, DeepPoint.PointType.Normal, p.InOrOut(clip))));
             List<DeepPoint> deepClip = new List<DeepPoint>(Array.ConvertAll(shape, p => new DeepPoint(p, DeepPoint.PointType.Normal, p.InOrOut(shape))));
 
