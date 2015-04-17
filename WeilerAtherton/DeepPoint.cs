@@ -4,11 +4,14 @@ using System.Drawing;
 
 namespace WeilerAtherton
 {
-    struct DeepPoint
+    public class DeepPoint
     {
         public PointF p;
         public PointType type;
         public PointStatus status;
+
+        public List<DeepPoint> intersections;
+
         public enum PointType
         {
             Normal,
@@ -22,12 +25,21 @@ namespace WeilerAtherton
             Undetermined
         }
 
+        public DeepPoint() { }
+
         public DeepPoint(PointF point, PointType pType, PointStatus pStatus)
         {
             p = point;
 
             type = pType;
             status = pStatus;
+
+            intersections = new List<DeepPoint>();
+        }
+
+        public void AddIntersection(DeepPoint inter)
+        {
+            throw new NotImplementedException("add intersection in DeepPoint");
         }
     }
 }
