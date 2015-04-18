@@ -19,11 +19,12 @@ namespace WeilerAtherton
             InitializeComponent();
             g = this.CreateGraphics();
             pen = new Pen(Color.Red);
-            txtInput.Text = "0,0|100,0|100,100|0,100||0,0|200,200|0,200";
+            txtInput.Text = "100,100|200,100|200,200|100,200||150,50|175,50|175,250|150,250";
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
+            g.Clear(Color.White);
             string[] lists = txtInput.Text.Split(new string[] { "||" }, StringSplitOptions.None);
 
             string[] first = lists[0].Split('|');
@@ -72,7 +73,7 @@ namespace WeilerAtherton
         private void doClip(PointF[] clip, PointF[] shape)
         {
             List<DeepPoint> deepShape = new List<DeepPoint>(Array.ConvertAll(shape, p => new DeepPoint(p, DeepPoint.PointType.Normal, p.InOrOut(clip))));
-            List<DeepPoint> deepClip = new List<DeepPoint>(Array.ConvertAll(shape, p => new DeepPoint(p, DeepPoint.PointType.Normal, p.InOrOut(shape))));
+            List<DeepPoint> deepClip = new List<DeepPoint>(Array.ConvertAll(clip, p => new DeepPoint(p, DeepPoint.PointType.Normal, p.InOrOut(shape))));
 
             for (int i = 0; i < deepShape.Count; i++)
             {
@@ -85,10 +86,11 @@ namespace WeilerAtherton
                     DeepPoint c1 = deepClip[j];
                     DeepPoint c2 = deepClip[(j + 1) % deepClip.Count];
 
-                    if (Line.HasIntersection(p1, p2, c1, c2))
+                    PointF interOutput;
+                    if (Line.Intersection(p1, p2, c1, c2, out interOutput))
                     {
                         //This ensures that we have the same intersection added to both (avoid precision errors)
-                        DeepPoint intersection = new DeepPoint(Line.Intersection(p1, p2, c1, c2), DeepPoint.PointType.Intersection, DeepPoint.PointStatus.Undetermined);
+                        DeepPoint intersection = new DeepPoint(interOutput, DeepPoint.PointType.Intersection, DeepPoint.PointStatus.Undetermined);
                         p1.intersections.Add(intersection);
                         c1.intersections.Add(intersection);
                     }
@@ -121,9 +123,6 @@ namespace WeilerAtherton
                 deepClip[i].SortIntersections();
             }
 
-            List<List<PointF>> output = new List<List<PointF>>();
-            List<PointF> currentShape = new List<PointF>();
-
             IntegrateIntersections(ref deepShape);
             IntegrateIntersections(ref deepClip);
 
@@ -143,89 +142,131 @@ namespace WeilerAtherton
                     iEntering.Add(i);
             }
 
-            //TODO: implement this into a loop of sorts + check if count > 0
-            int goToIndex = iEntering[0]; //should be set to loop through these points
+            //no intersecion = nothing to return
+            if (iEntering.Count == 0) return;
 
-            for (int i = 0; i < deepShape.Count; i++)
+            List<List<PointF>> output = new List<List<PointF>>();
+            List<PointF> currentShape = new List<PointF>();
+
+            //go through all of our entering points
+            for (int mainCount = 0; mainCount < iEntering.Count; mainCount++)
             {
-                DeepPoint p1 = deepShape[i];
-                DeepPoint p2 = deepShape[(i + 1) % deepShape.Count];
+                int goToIndex = iEntering[mainCount];
 
-                if (p1.type == DeepPoint.PointType.Normal)
+                bool complete = false;
+
+                while (!complete)
                 {
-                    if (p1.status == DeepPoint.PointStatus.In)
+                    //loop through all shape points starting at goToIndex
+                    for (int iCount = goToIndex; iCount < deepShape.Count + goToIndex; iCount++)
                     {
-                        //break when we get back to start
-                        if (currentShape[0] == p1.p) break;
-                        currentShape.Add(p1.p);
+                        int i = iCount % deepShape.Count;
+                        DeepPoint p1 = deepShape[i];
+                        DeepPoint p2 = deepShape[(i + 1) % deepShape.Count];
 
-                        //point2 must be heading outwards
-                        if (p2.type == DeepPoint.PointType.Intersection)
+                        if (p1.type == DeepPoint.PointType.Normal)
                         {
-                            //go to clipPoints loop and start from intersection
-                            goToIndex = shapeIntersectionToClipIndex[p2];
-                            break;
+                            if (p1.status == DeepPoint.PointStatus.In)
+                            {
+                                //break when we get back to start
+                                if (currentShape.Count > 0 && currentShape[0] == p1.p)
+                                {
+                                    complete = true;
+                                    break;
+                                }
+                                currentShape.Add(p1.p);
+
+                                //point2 must be heading outwards
+                                if (p2.type == DeepPoint.PointType.Intersection)
+                                {
+                                    //go to clipPoints loop and start from intersection
+                                    goToIndex = shapeIntersectionToClipIndex[p2];
+                                    break;
+                                }
+                            }
+                            //we don't care about point2 here
+                            //if point1 is an outside normal point,
+                            //	then point2 must either be an outside normal point OR an intersection going inwards.
+                            //		The former doesn't not need to be handled, the latter will be handled upon looping
+
                         }
-                    }
-                    //we don't care about point2 here
-                    //if point1 is an outside normal point,
-                    //	then point2 must either be an outside normal point OR an intersection going inwards.
-                    //		The former doesn't not need to be handled, the latter will be handled upon looping
+                        else //p1 is an intersection
+                        {
+                            //break when we get back to start
+                            if (currentShape.Count > 0 && currentShape[0] == p1.p)
+                            {
+                                complete = true;
+                                break;
+                            }
 
-                }
-                else //p1 is an intersection
-                {
-                    //break when we get back to start
-                    if (currentShape[0] == p1.p) break;
+                            //we must add point 1 since it's on the border
+                            currentShape.Add(p1.p);
 
-                    //we must add point 1 since it's on the border
-                    currentShape.Add(p1.p);
+                            //exiting
+                            if (p1.status == DeepPoint.PointStatus.Out)
+                            {
+                                //go to clipPoints loop and start from after intersection;
+                                goToIndex = (shapeIntersectionToClipIndex[p1] + 1) % deepClip.Count;
+                                break;
+                            }
+                        }
+                    } //end deepShape for
 
-                    //exiting
-                    if (p1.status == DeepPoint.PointStatus.Out)
+                    //break while loop if complete
+                    if (complete) break;
+
+                    //loop through all clip points starting at goToIndex
+                    //we should only get here from a go to from shapePoints
+                    for (int iCount = goToIndex; iCount < deepClip.Count + goToIndex; iCount++)
                     {
-                        //go to clipPoints loop and start from after intersection;
-                        goToIndex = (shapeIntersectionToClipIndex[p1]+1) % deepClip.Count;
-                        break;
-                    }
-                }
-            } //end deepShape for
+                        int i = iCount % deepClip.Count;
+                        DeepPoint p1 = deepClip[i];
+                        DeepPoint p2 = deepClip[(i + 1) % deepClip.Count];
 
+                        if (p1.type == DeepPoint.PointType.Intersection)
+                        {
+                            //break when we get back to start
+                            if (currentShape.Count > 0 && currentShape[0] == p1.p)
+                            {
+                                complete = true;
+                                break;
+                            }
 
-            //we should only get here from a go to from shapePoints
-            for (int i = 0; i < deepClip.Count; i++)
-            {
-                DeepPoint p1 = deepClip[i];
-                DeepPoint p2 = deepClip[(i + 1) % deepClip.Count];
+                            //we must add point 1 since it's on the border
+                            currentShape.Add(p1.p);
 
-                if(p1.type == DeepPoint.PointType.Intersection)
-                {
-                    //break when we get back to start
-                    if (currentShape[0] == p1.p) break;
+                            if (p1.status == DeepPoint.PointStatus.In)
+                            {
+                                //go to shapePoints loop and start from after point1
+                                goToIndex = (clipIntersectionToShapeIndex[p1] + 1) % deepShape.Count;
+                                break;
+                            }
+                        }
+                        else //p1 is normal
+                        {
+                            if (p1.status == DeepPoint.PointStatus.In)
+                            {
+                                //break when we get back to start
+                                if (currentShape.Count > 0 && currentShape[0] == p1.p)
+                                {
+                                    complete = true;
+                                    break;
+                                }
 
-                    //we must add point 1 since it's on the border
-                    currentShape.Add(p1.p);
+                                //we must add point 1 since it's on the border
+                                currentShape.Add(p1.p);
+                            }
+                        }
+                    } //end deepClip for
+                }//end while loop
 
-                    if(p1.status == DeepPoint.PointStatus.In)
-                    {
-                        //go to shapePoints loop and start from after point1
-                        goToIndex = (clipIntersectionToShapeIndex[p1] + 1) % deepShape.Count;
-                        break;
-                    }
-                }
-                else //p1 is normal
-                {
-                    if(p1.status == DeepPoint.PointStatus.In)
-                    {
-                        //break when we get back to start
-                        if (currentShape[0] == p1.p) break;
+                output.Add(currentShape);
+                currentShape = new List<PointF>();
+            }//end main for loop
 
-                        //we must add point 1 since it's on the border
-                        currentShape.Add(p1.p);
-                    }
-                }
-            } //end deepClip for
-
+            pen.Width = 2;
+            DrawLines(output[0].ToArray(), Color.Green);
+            pen.Width = 1;
         } //end doClip
 
         //TODO: test this

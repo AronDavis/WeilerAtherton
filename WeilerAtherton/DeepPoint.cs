@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 
 namespace WeilerAtherton
 {
@@ -41,8 +42,22 @@ namespace WeilerAtherton
         {
             if (intersections.Count <= 1) return;
 
-            throw new NotImplementedException();
-            //sort
+            //sort by closest to point = first
+            intersections.Sort((p1, p2) =>
+            {
+                
+                float d1 = DistanceSquared(p1, this);
+                float d2 = DistanceSquared(p2, this);
+                if (d1 < d2) return -1;
+                else if (d1 > d2) return 1;
+                else return 0;
+            });
+        }
+
+        //Distance Squared
+        public static float DistanceSquared(DeepPoint p1, DeepPoint p2)
+        {
+            return (p2.p.X - p1.p.X) * (p2.p.X - p1.p.X) + (p2.p.Y - p1.p.Y) * (p2.p.Y - p1.p.Y);
         }
     }
 }
