@@ -34,21 +34,20 @@ namespace WeilerAtherton
                 float A1, B1, C1;
                 float A2, B2, C2;
 
-                do
+                //https://www.topcoder.com/community/data-science/data-science-tutorials/geometry-concepts-line-intersection-and-its-applications/#line_line_intersection
+                A1 = c2.Y - c1.Y;
+                B1 = c1.X - c2.X;
+                C1 = A1 * c1.X + B1 * c1.Y;
+
+                A2 = outside.Y - point.Y;
+                B2 = point.X - outside.X;
+                C2 = A2 * point.X + B2 * point.Y;
+
+                det = A1 * B2 - A2 * B1;
+                if (det == 0)
                 {
-                    outside.X--;
-                    //https://www.topcoder.com/community/data-science/data-science-tutorials/geometry-concepts-line-intersection-and-its-applications/#line_line_intersection
-                    A1 = c2.Y - c1.Y;
-                    B1 = c1.X - c2.X;
-                    C1 = A1 * c1.X + B1 * c1.Y;
-
-                    A2 = outside.Y - point.Y;
-                    B2 = point.X - outside.X;
-                    C2 = A2 * point.X + B2 * point.Y;
-
-                    det = A1 * B2 - A2 * B1;
-                } 
-                while (det == 0); //keep adjusting until are lines aren't parallel
+                    throw new Exception("PARALLEL");
+                }
               
                 PointF intersect = new PointF(B2 * C1 - B1 * C2, A1 * C2 - A2 * C1); //would normally be /det
                 intersect.X /= det;

@@ -18,7 +18,7 @@ namespace WeilerAtherton
         {
             InitializeComponent();
             g = this.CreateGraphics();
-            pen = new Pen(Color.Red);
+            pen = new Pen(Color.Red, 2);
             txtInput.Text = "100,100|200,100|200,200|100,200||150,50|175,50|175,250|150,250";
         }
 
@@ -264,9 +264,9 @@ namespace WeilerAtherton
                 currentShape = new List<PointF>();
             }//end main for loop
 
-            pen.Width = 2;
+            pen.Width = 5;
             DrawLines(output[0].ToArray(), Color.Green);
-            pen.Width = 1;
+            pen.Width = 2;
         } //end doClip
 
         //TODO: test this
