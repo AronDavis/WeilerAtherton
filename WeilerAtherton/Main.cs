@@ -109,7 +109,9 @@ namespace WeilerAtherton
                     //if there's a previous intersection
                     if(j>0)
                     {
-                        if (p1.intersections[j-1].status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter pStatus to Out
+                        DeepPoint prev = p1.intersections[j-1];
+                        if (intersection.p == prev.p) intersection.status = prev.status; //handle duplicate intersections (caused by overlap normal point)
+                        else if (prev.status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter pStatus to Out
                         else intersection.status = DeepPoint.PointStatus.In; //set inter as In
                     }
                     else if(p1.status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter as Out
@@ -145,8 +147,10 @@ namespace WeilerAtherton
             //no intersecion = nothing to return
             if (iEntering.Count == 0) return;
 
-            List<List<PointF>> output = new List<List<PointF>>();
-            List<PointF> currentShape = new List<PointF>();
+            List<List<DeepPoint>> output = new List<List<DeepPoint>>();
+            List<DeepPoint> currentShape = new List<DeepPoint>();
+
+            //TODO: add method to ignore entering points that were included in an output shape already
 
             //go through all of our entering points
             for (int mainCount = 0; mainCount < iEntering.Count; mainCount++)
@@ -169,12 +173,13 @@ namespace WeilerAtherton
                             if (p1.status == DeepPoint.PointStatus.In)
                             {
                                 //break when we get back to start
-                                if (currentShape.Count > 0 && currentShape[0] == p1.p)
+                                if (currentShape.Count > 0 && currentShape[0] == p1)
                                 {
                                     complete = true;
                                     break;
                                 }
-                                currentShape.Add(p1.p);
+
+                                currentShape.Add(p1);
 
                                 //point2 must be heading outwards
                                 if (p2.type == DeepPoint.PointType.Intersection)
@@ -193,14 +198,14 @@ namespace WeilerAtherton
                         else //p1 is an intersection
                         {
                             //break when we get back to start
-                            if (currentShape.Count > 0 && currentShape[0] == p1.p)
+                            if (currentShape.Count > 0 && currentShape[0] == p1)
                             {
                                 complete = true;
                                 break;
                             }
 
                             //we must add point 1 since it's on the border
-                            currentShape.Add(p1.p);
+                            currentShape.Add(p1);
 
                             //exiting
                             if (p1.status == DeepPoint.PointStatus.Out)
@@ -226,15 +231,16 @@ namespace WeilerAtherton
                         if (p1.type == DeepPoint.PointType.Intersection)
                         {
                             //break when we get back to start
-                            if (currentShape.Count > 0 && currentShape[0] == p1.p)
+                            if (currentShape.Count > 0 && currentShape[0] == p1)
                             {
                                 complete = true;
                                 break;
                             }
 
                             //we must add point 1 since it's on the border
-                            currentShape.Add(p1.p);
+                            currentShape.Add(p1);
 
+                            //if it was going inwards
                             if (p1.status == DeepPoint.PointStatus.In)
                             {
                                 //go to shapePoints loop and start from after point1
@@ -247,25 +253,40 @@ namespace WeilerAtherton
                             if (p1.status == DeepPoint.PointStatus.In)
                             {
                                 //break when we get back to start
-                                if (currentShape.Count > 0 && currentShape[0] == p1.p)
+                                if (currentShape.Count > 0 && currentShape[0] == p1)
                                 {
                                     complete = true;
                                     break;
                                 }
 
                                 //we must add point 1 since it's on the border
-                                currentShape.Add(p1.p);
+                                currentShape.Add(p1);
                             }
                         }
                     } //end deepClip for
                 }//end while loop
 
                 output.Add(currentShape);
-                currentShape = new List<PointF>();
+                currentShape = new List<DeepPoint>();
             }//end main for loop
+            
+            //remove duplicate entries
+            for (int i = 0; i < output.Count; i++)
+            {
+                for(int j = 0; j < output[i].Count; j++)
+                {
+                    //remove duplicates
+                    if(output[i][j].p == output[i][(j + 1) % output[i].Count].p)
+                    {
+                        //remove current
+                        output[i].RemoveAt(j);
+                        j--;
+                    }
+                }
+            }
 
             pen.Width = 5;
-            DrawLines(output[0].ToArray(), Color.Green);
+            DrawLines(Array.ConvertAll(output[0].ToArray(), p => p.p), Color.Green);
             pen.Width = 2;
         } //end doClip
 
