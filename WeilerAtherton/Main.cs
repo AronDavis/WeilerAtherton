@@ -110,6 +110,8 @@ namespace WeilerAtherton
                     if(j>0)
                     {
                         DeepPoint prev = p1.intersections[j-1];
+
+                        //TODO: could handle "if" by simply removing the duplicate (wouldn't have to remove dupes later + less processing
                         if (intersection.p == prev.p) intersection.status = prev.status; //handle duplicate intersections (caused by overlap normal point)
                         else if (prev.status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter pStatus to Out
                         else intersection.status = DeepPoint.PointStatus.In; //set inter as In
