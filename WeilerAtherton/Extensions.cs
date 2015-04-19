@@ -23,7 +23,9 @@ namespace WeilerAtherton
             outside.X--;
             outside.Y--;
 
-            int intersections = 0;
+            HashSet<PointF> intersections = new HashSet<PointF>();
+
+            int intersectionCount = 0;
             for (int i = 0; i < shape.Length; i++)
             {                
 
@@ -66,15 +68,19 @@ namespace WeilerAtherton
                 float yMin2 = Math.Min(point.Y, outside.Y);
                 float yMax2 = Math.Max(point.Y, outside.Y);
 
-                if (xMin <= intersect.X && intersect.X <= xMax 
+                if (xMin <= intersect.X && intersect.X <= xMax
                     && yMin <= intersect.Y && intersect.Y <= yMax
                     && xMin2 <= intersect.X && intersect.X <= xMax2
-                    && yMin2 <= intersect.Y && intersect.Y <= yMax2)
-                    intersections++;
+                    && yMin2 <= intersect.Y && intersect.Y <= yMax2
+                    && !intersections.Contains(intersect))
+                {
+                    intersectionCount++;
+                    intersections.Add(intersect);
+                }
             }
 
             //covers 0 + evens
-            if (intersections % 2 == 0) return DeepPoint.PointStatus.Out;
+            if (intersectionCount % 2 == 0) return DeepPoint.PointStatus.Out;
             else return DeepPoint.PointStatus.In; //odds > 0
         }
     }
