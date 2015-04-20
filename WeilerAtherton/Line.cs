@@ -9,9 +9,9 @@ namespace WeilerAtherton
 {
     static class Line
     {
-        public static bool Intersection(DeepPoint start1, DeepPoint end1, DeepPoint start2, DeepPoint end2, out PointF output)
+        public static bool Intersection(DeepPoint start1, DeepPoint end1, DeepPoint start2, DeepPoint end2, out List<PointF> output)
         {
-            output = new PointF();
+            output = new List<PointF>();
             float det;
             float A1, B1, C1;
             float A2, B2, C2;
@@ -29,9 +29,44 @@ namespace WeilerAtherton
 
             if(det == 0)
             {
-                //lines are parallel
+                bool overlap = false;
+
+                //there will possibly be two points
+                float cxMin = Math.Min(start2.p.X, end2.p.X);
+                float cxMax = Math.Max(start2.p.X, end2.p.X);
+
+                float cyMin = Math.Min(start2.p.Y, end2.p.Y);
+                float cyMax = Math.Max(start2.p.Y, end2.p.Y);
+
+                if (cxMin <= start1.p.X && start1.p.X <= cxMax
+                && cyMin <= start1.p.Y && start1.p.Y <= cyMax)
+                {
+                    //use start1
+                    output.Add(start1.p);
+                    overlap = true;
+                }
+                else
+                {
+                    //use start2
+                    output.Add(start2.p);
+                }
+
+                if (cxMin <= end1.p.X && end1.p.X <= cxMax
+                    && cyMin <= end1.p.Y && end1.p.Y <= cyMax)
+                {
+                    //use end1
+                    output.Add(end1.p);
+                    overlap = true;
+                }
+                else
+                {
+                    //use end2
+                    output.Add(end2.p);
+                }
+
+                //lines are parallel and possibly overlap
                 Console.WriteLine("Parallel Lines");
-                return false;
+                return overlap;
             }
               
             PointF intersect = new PointF(B2 * C1 - B1 * C2, A1 * C2 - A2 * C1); //would normally be /det
@@ -56,7 +91,7 @@ namespace WeilerAtherton
                 && xMin2 <= intersect.X && intersect.X <= xMax2
                 && yMin2 <= intersect.Y && intersect.Y <= yMax2)
             {
-                output = intersect;
+                output.Add(intersect);
                 return true;
             }
             else return false;

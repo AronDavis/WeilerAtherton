@@ -10,6 +10,11 @@ using System.Windows.Forms;
 
 namespace WeilerAtherton
 {
+    /* TEST CASES
+     0,0|100,100|200,100|200,200|300,300|100,200||150,50|300,100|175,250|150,250
+     0,0|100,100|200,100|200,200|300,300|100,200||0,0|100,100|200,100|200,200|300,300|100,200
+     */
+
     public partial class Main : Form
     {
         System.Drawing.Graphics g;
@@ -86,13 +91,18 @@ namespace WeilerAtherton
                     DeepPoint c1 = deepClip[j];
                     DeepPoint c2 = deepClip[(j + 1) % deepClip.Count];
 
-                    PointF interOutput;
+                    List<PointF> interOutput;
                     if (Line.Intersection(p1, p2, c1, c2, out interOutput))
                     {
-                        //This ensures that we have the same intersection added to both (avoid precision errors)
-                        DeepPoint intersection = new DeepPoint(interOutput, DeepPoint.PointType.Intersection, DeepPoint.PointStatus.Undetermined);
-                        p1.intersections.Add(intersection);
-                        c1.intersections.Add(intersection);
+                        foreach (PointF inter in interOutput)
+                        {
+                            if (inter == p1.p || inter == p2.p || inter == c1.p || inter == c2.p) continue;
+
+                            //This ensures that we have the same intersection added to both (avoid precision errors)
+                            DeepPoint intersection = new DeepPoint(inter, DeepPoint.PointType.Intersection, DeepPoint.PointStatus.Undetermined);
+                            p1.intersections.Add(intersection);
+                            c1.intersections.Add(intersection);
+                        }
                     }
                 }
 
@@ -106,13 +116,32 @@ namespace WeilerAtherton
                     //TODO: test that changing intersection.status affects the intersection in clip as well
                     DeepPoint intersection = p1.intersections[j];
 
+                    //if there's an intersection ahead
+                    if (j < p1.intersections.Count-1)
+                    {
+                        DeepPoint next = p1.intersections[j + 1];
+
+                        if(intersection.p == next.p)
+                        {
+                            //Remove any duplicates
+                            p1.intersections.RemoveAt(j+1);
+                            j--; //stay in current position
+                            continue;
+                        }
+                    }
+
                     //if there's a previous intersection
                     if(j>0)
                     {
                         DeepPoint prev = p1.intersections[j-1];
 
                         //TODO: could handle "if" by simply removing the duplicate (wouldn't have to remove dupes later + less processing
-                        if (intersection.p == prev.p) intersection.status = prev.status; //handle duplicate intersections (caused by overlap normal point)
+                        if (intersection.p == prev.p)
+                        {
+                            //handle duplicate intersections (caused by overlap normal point)
+                            p1.intersections.RemoveAt(j);
+                            j--;
+                        }
                         else if (prev.status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter pStatus to Out
                         else intersection.status = DeepPoint.PointStatus.In; //set inter as In
                     }
@@ -146,11 +175,41 @@ namespace WeilerAtherton
                     iEntering.Add(i);
             }
 
-            //no intersecion = nothing to return
-            if (iEntering.Count == 0) return;
-
             List<List<DeepPoint>> output = new List<List<DeepPoint>>();
             List<DeepPoint> currentShape = new List<DeepPoint>();
+
+            //no intersecion = nothing to return
+            if (iEntering.Count == 0)
+            {
+                bool allInside = true;
+                foreach(DeepPoint p in deepShape)
+                {
+                    if(p.status != DeepPoint.PointStatus.In)
+                    {
+                        allInside = false;
+                        break;
+                    }
+                }
+                if(allInside)
+                {
+                    foreach (DeepPoint p in deepShape)
+                    {
+                        currentShape.Add(p);
+                    }
+                }
+                else
+                {
+                    foreach (DeepPoint p in deepClip)
+                    {
+                        currentShape.Add(p);
+                    }
+                }
+                output.Add(currentShape);
+                pen.Width = 5;
+                DrawLines(Array.ConvertAll(output[0].ToArray(), p => p.p), Color.Green);
+                pen.Width = 2;
+                return;
+            }
 
             //TODO: add method to ignore entering points that were included in an output shape already
 

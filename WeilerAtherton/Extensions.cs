@@ -28,9 +28,11 @@ namespace WeilerAtherton
             int intersectionCount = 0;
             for (int i = 0; i < shape.Length; i++)
             {                
-
                 PointF c1 = shape[i];
                 PointF c2 = shape[(i + 1) % shape.Length];
+
+                //if our point is the same as one of the shape points, we consider it inside the shape
+                if(point == c1 || point == c2) return DeepPoint.PointStatus.In;
 
                 float det;
                 float A1, B1, C1;

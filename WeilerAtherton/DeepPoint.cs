@@ -60,4 +60,14 @@ namespace WeilerAtherton
             return (p2.p.X - p1.p.X) * (p2.p.X - p1.p.X) + (p2.p.Y - p1.p.Y) * (p2.p.Y - p1.p.Y);
         }
     }
+    
+   public static class DeepPointExtensions
+    {
+        //extension for float
+        public static int Sign(this float f)
+        {
+            if (f >= 0) return 1;
+            else return -1;
+        }
+    }
 }
