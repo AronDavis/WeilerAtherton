@@ -29,6 +29,14 @@ namespace WeilerAtherton
 
             if(det == 0)
             {
+                float mTop = end1.p.Y - start1.p.Y;
+                float mBot = end1.p.X - start1.p.X;
+
+                float b1 = end1.p.Y - (mTop * end1.p.X) / mBot;
+                float b2 = end2.p.Y - (mTop * end2.p.X) / mBot;
+
+                if (b1 != b2) return false;
+
                 bool overlap = false;
 
                 //there will possibly be two points

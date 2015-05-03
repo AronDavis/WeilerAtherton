@@ -34,9 +34,10 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(197, 227);
+            this.button1.Location = new System.Drawing.Point(569, 596);
+            this.button1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.Size = new System.Drawing.Size(100, 28);
             this.button1.TabIndex = 0;
             this.button1.Text = "Draw";
             this.button1.UseVisualStyleBackColor = true;
@@ -44,18 +45,20 @@
             // 
             // txtInput
             // 
-            this.txtInput.Location = new System.Drawing.Point(12, 12);
+            this.txtInput.Location = new System.Drawing.Point(13, 599);
+            this.txtInput.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.txtInput.Name = "txtInput";
-            this.txtInput.Size = new System.Drawing.Size(100, 20);
+            this.txtInput.Size = new System.Drawing.Size(548, 22);
             this.txtInput.TabIndex = 1;
             // 
             // Main
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 262);
+            this.ClientSize = new System.Drawing.Size(682, 637);
             this.Controls.Add(this.txtInput);
             this.Controls.Add(this.button1);
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "Main";
             this.Text = "Weiler Atherton";
             this.ResumeLayout(false);

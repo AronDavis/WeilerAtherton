@@ -83,25 +83,44 @@ namespace WeilerAtherton
             for (int i = 0; i < deepShape.Count; i++)
             {
                 DeepPoint p1 = deepShape[i];
-                DeepPoint p2 = deepShape[(i + 1) % deepShape.Count];
+                DeepPoint p2 = deepShape.NextAfter(i);
 
                 //check for intersections
                 for (int j = 0; j < deepClip.Count; j++)
                 {
                     DeepPoint c1 = deepClip[j];
-                    DeepPoint c2 = deepClip[(j + 1) % deepClip.Count];
+                    DeepPoint c2 = deepClip.NextAfter(j);
 
                     List<PointF> interOutput;
                     if (Line.Intersection(p1, p2, c1, c2, out interOutput))
                     {
                         foreach (PointF inter in interOutput)
                         {
-                            if (inter == p1.p || inter == p2.p || inter == c1.p || inter == c2.p) continue;
-
                             //This ensures that we have the same intersection added to both (avoid precision errors)
                             DeepPoint intersection = new DeepPoint(inter, DeepPoint.PointType.Intersection, DeepPoint.PointStatus.Undetermined);
-                            p1.intersections.Add(intersection);
-                            c1.intersections.Add(intersection);
+
+                            if (inter == p1.p || inter == p2.p || inter == c1.p || inter == c2.p)
+                            {
+                                if (inter == p1.p && inter == c1.p)
+                                {
+                                    p1.overlap = true;
+                                    c1.overlap = true;
+                                    p1.type = DeepPoint.PointType.Intersection;
+                                    c1.type = DeepPoint.PointType.Intersection;
+                                    continue;
+                                }
+                                else if(inter != p2.p && inter != c2.p)
+                                {
+                                    p1.intersections.Add(intersection);
+                                    c1.intersections.Add(intersection);
+                                }
+                            }
+                            else
+                            {
+                                //TODO: if intersection is same as p1,p2,c1,c2 -> make a note of it?
+                                p1.intersections.Add(intersection);
+                                c1.intersections.Add(intersection);
+                            }
                         }
                     }
                 }
@@ -113,39 +132,16 @@ namespace WeilerAtherton
                 //loop through intersections between p1 and p2
                 for(int j = 0; j < p1.intersections.Count; j++)
                 {
-                    //TODO: test that changing intersection.status affects the intersection in clip as well
                     DeepPoint intersection = p1.intersections[j];
 
-                    //if there's an intersection ahead
-                    if (j < p1.intersections.Count-1)
-                    {
-                        DeepPoint next = p1.intersections[j + 1];
-
-                        if(intersection.p == next.p)
-                        {
-                            //Remove any duplicates
-                            p1.intersections.RemoveAt(j+1);
-                            j--; //stay in current position
-                            continue;
-                        }
-                    }
-
                     //if there's a previous intersection
-                    if(j>0)
+                    if (j > 0)
                     {
-                        DeepPoint prev = p1.intersections[j-1];
-
-                        //TODO: could handle "if" by simply removing the duplicate (wouldn't have to remove dupes later + less processing
-                        if (intersection.p == prev.p)
-                        {
-                            //handle duplicate intersections (caused by overlap normal point)
-                            p1.intersections.RemoveAt(j);
-                            j--;
-                        }
-                        else if (prev.status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter pStatus to Out
+                        DeepPoint prev = p1.intersections[j - 1];
+                        if (prev.status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter pStatus to Out
                         else intersection.status = DeepPoint.PointStatus.In; //set inter as In
                     }
-                    else if(p1.status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter as Out
+                    else if (p1.status == DeepPoint.PointStatus.In) intersection.status = DeepPoint.PointStatus.Out; //set inter as Out
                     else intersection.status = DeepPoint.PointStatus.In; //set inter as In
                 }
             }
@@ -160,8 +156,8 @@ namespace WeilerAtherton
             IntegrateIntersections(ref deepClip);
 
             //Use these to jump from list to list
-            Dictionary<DeepPoint, int> shapeIntersectionToClipIndex = new Dictionary<DeepPoint, int>();
-            Dictionary<DeepPoint, int> clipIntersectionToShapeIndex = new Dictionary<DeepPoint, int>();
+            Dictionary<PointF, int> shapeIntersectionToClipIndex = new Dictionary<PointF, int>();
+            Dictionary<PointF, int> clipIntersectionToShapeIndex = new Dictionary<PointF, int>();
             BuildIntersectionMap(ref shapeIntersectionToClipIndex, deepShape, ref clipIntersectionToShapeIndex, deepClip);
 
             //start from entering points
@@ -171,25 +167,47 @@ namespace WeilerAtherton
             for (int i = 0; i < deepShape.Count; i++)
             {
                 DeepPoint point = deepShape[i];
-                if(point.type == DeepPoint.PointType.Intersection && point.status == DeepPoint.PointStatus.In)
+                if(point.overlap || (point.type == DeepPoint.PointType.Intersection && point.status == DeepPoint.PointStatus.In))
                     iEntering.Add(i);
             }
 
             List<List<DeepPoint>> output = new List<List<DeepPoint>>();
             List<DeepPoint> currentShape = new List<DeepPoint>();
 
-            //no intersecion = nothing to return
-            if (iEntering.Count == 0)
+            bool allEnteringAreOverlap = true;
+            foreach (int i in iEntering)
+            {
+                if(!deepShape[i].overlap)
+                {
+                    allEnteringAreOverlap = false;
+                    break;
+                }
+            }
+
+            bool hasNonOverlapIntersections = false;
+
+            foreach (DeepPoint p in deepShape)
+            {
+                if (!p.overlap && p.type == DeepPoint.PointType.Intersection)
+                {
+                    hasNonOverlapIntersections = true;
+                    break;
+                }
+            }
+
+            //handle special cases
+            if ((iEntering.Count == 0 || allEnteringAreOverlap) && !hasNonOverlapIntersections)
             {
                 bool allInside = true;
                 foreach(DeepPoint p in deepShape)
                 {
-                    if(p.status != DeepPoint.PointStatus.In)
+                    if (p.status != DeepPoint.PointStatus.In && !p.overlap)
                     {
                         allInside = false;
                         break;
                     }
                 }
+
                 if(allInside)
                 {
                     foreach (DeepPoint p in deepShape)
@@ -199,11 +217,27 @@ namespace WeilerAtherton
                 }
                 else
                 {
+                    //check that deepClip are all inside
+                    allInside = true;
                     foreach (DeepPoint p in deepClip)
                     {
-                        currentShape.Add(p);
+                        if (p.status != DeepPoint.PointStatus.In && !p.overlap)
+                        {
+                            allInside = false;
+                            break;
+                        }
                     }
+
+                    if (allInside)
+                    {
+                        foreach (DeepPoint p in deepClip)
+                        {
+                            currentShape.Add(p);
+                        }
+                    }
+                    else return;
                 }
+
                 output.Add(currentShape);
                 pen.Width = 5;
                 DrawLines(Array.ConvertAll(output[0].ToArray(), p => p.p), Color.Green);
@@ -227,14 +261,31 @@ namespace WeilerAtherton
                     {
                         int i = iCount % deepShape.Count;
                         DeepPoint p1 = deepShape[i];
-                        DeepPoint p2 = deepShape[(i + 1) % deepShape.Count];
+                        DeepPoint p2 = deepShape.NextAfter(i);
+
+                        if (p1.overlap)
+                        {
+                            DeepPoint prev = deepShape.PrevBefore(i);
+                            if (prev.overlap || prev.status == DeepPoint.PointStatus.Out)
+                                p1.tempStatus = DeepPoint.PointStatus.In;
+                            else p1.tempStatus = DeepPoint.PointStatus.Out;
+                        }
+                        else p1.tempStatus = p1.status;
+
+                        if (p2.overlap)
+                        {
+                            if (p1.overlap || p1.status == DeepPoint.PointStatus.Out)
+                                p2.tempStatus = DeepPoint.PointStatus.In;
+                            else p2.tempStatus = DeepPoint.PointStatus.Out;
+                        }
+                        else p2.tempStatus = p2.status;
 
                         if (p1.type == DeepPoint.PointType.Normal)
                         {
-                            if (p1.status == DeepPoint.PointStatus.In)
+                            if (p1.tempStatus == DeepPoint.PointStatus.In)
                             {
                                 //break when we get back to start
-                                if (currentShape.Count > 0 && currentShape[0] == p1)
+                                if (currentShape.Count > 0 && currentShape[0].p == p1.p)
                                 {
                                     complete = true;
                                     break;
@@ -246,8 +297,8 @@ namespace WeilerAtherton
                                 if (p2.type == DeepPoint.PointType.Intersection)
                                 {
                                     //go to clipPoints loop and start from intersection
-                                    goToIndex = shapeIntersectionToClipIndex[p2];
-                                    break;
+                                    //goToIndex = shapeIntersectionToClipIndex[p2.p] + 1;
+                                    //break;
                                 }
                             }
                             //we don't care about point2 here
@@ -259,7 +310,7 @@ namespace WeilerAtherton
                         else //p1 is an intersection
                         {
                             //break when we get back to start
-                            if (currentShape.Count > 0 && currentShape[0] == p1)
+                            if (currentShape.Count > 0 && currentShape[0].p == p1.p)
                             {
                                 complete = true;
                                 break;
@@ -269,10 +320,10 @@ namespace WeilerAtherton
                             currentShape.Add(p1);
 
                             //exiting
-                            if (p1.status == DeepPoint.PointStatus.Out)
+                            if (p1.tempStatus == DeepPoint.PointStatus.Out)
                             {
                                 //go to clipPoints loop and start from after intersection;
-                                goToIndex = (shapeIntersectionToClipIndex[p1] + 1) % deepClip.Count;
+                                goToIndex = (shapeIntersectionToClipIndex[p1.p] + 1) % deepClip.Count;
                                 break;
                             }
                         }
@@ -287,12 +338,29 @@ namespace WeilerAtherton
                     {
                         int i = iCount % deepClip.Count;
                         DeepPoint p1 = deepClip[i];
-                        DeepPoint p2 = deepClip[(i + 1) % deepClip.Count];
+                        DeepPoint p2 = deepClip.NextAfter(i);
+
+                        if (p1.overlap)
+                        {
+                            DeepPoint prev = deepClip.PrevBefore(i);
+                            if (prev.overlap || prev.status == DeepPoint.PointStatus.Out)
+                                p1.tempStatus = DeepPoint.PointStatus.In;
+                            else p1.tempStatus = DeepPoint.PointStatus.Out;
+                        }
+                        else p1.tempStatus = p1.status;
+
+                        if (p2.overlap)
+                        {
+                            if (p1.overlap || p1.status == DeepPoint.PointStatus.Out)
+                                p2.tempStatus = DeepPoint.PointStatus.In;
+                            else p2.tempStatus = DeepPoint.PointStatus.Out;
+                        }
+                        else p2.tempStatus = p2.status;
 
                         if (p1.type == DeepPoint.PointType.Intersection)
                         {
                             //break when we get back to start
-                            if (currentShape.Count > 0 && currentShape[0] == p1)
+                            if (currentShape.Count > 0 && currentShape[0].p == p1.p)
                             {
                                 complete = true;
                                 break;
@@ -302,19 +370,19 @@ namespace WeilerAtherton
                             currentShape.Add(p1);
 
                             //if it was going inwards
-                            if (p1.status == DeepPoint.PointStatus.In)
+                            if (p1.tempStatus == DeepPoint.PointStatus.In)
                             {
                                 //go to shapePoints loop and start from after point1
-                                goToIndex = (clipIntersectionToShapeIndex[p1] + 1) % deepShape.Count;
+                                goToIndex = (clipIntersectionToShapeIndex[p1.p] + 1) % deepShape.Count;
                                 break;
                             }
                         }
                         else //p1 is normal
                         {
-                            if (p1.status == DeepPoint.PointStatus.In)
+                            if (p1.tempStatus == DeepPoint.PointStatus.In)
                             {
                                 //break when we get back to start
-                                if (currentShape.Count > 0 && currentShape[0] == p1)
+                                if (currentShape.Count > 0 && currentShape[0].p == p1.p)
                                 {
                                     complete = true;
                                     break;
@@ -331,18 +399,25 @@ namespace WeilerAtherton
                 currentShape = new List<DeepPoint>();
             }//end main for loop
             
-            //remove duplicate entries
-            for (int i = 0; i < output.Count; i++)
+            //remove duplicate points
+            for(int iOutput = 0; iOutput < output.Count; iOutput++)
             {
-                for(int j = 0; j < output[i].Count; j++)
+                List<DeepPoint> points = output[iOutput];
+                for (int i = 0; i < points.Count; i++)
                 {
                     //remove duplicates
-                    if(output[i][j].p == output[i][(j + 1) % output[i].Count].p)
+                    if (points[i].p == points.NextAfter(i).p)
                     {
                         //remove current
-                        output[i].RemoveAt(j);
-                        j--;
+                        points.RemoveAt(i);
+                        i--;
                     }
+                }
+
+                if (points.Count < 3)
+                {
+                    output.Remove(points);
+                    iOutput--;
                 }
             }
 
@@ -368,7 +443,7 @@ namespace WeilerAtherton
         }
 
         //TODO: test
-        private void BuildIntersectionMap(ref Dictionary<DeepPoint, int> fromMap, List<DeepPoint> from, ref Dictionary<DeepPoint, int> toMap, List<DeepPoint> to)
+        private void BuildIntersectionMap(ref Dictionary<PointF, int> fromMap, List<DeepPoint> from, ref Dictionary<PointF, int> toMap, List<DeepPoint> to)
         {
             for (int i = 0; i < from.Count; i++)
             {
@@ -377,8 +452,12 @@ namespace WeilerAtherton
                 if (point.type == DeepPoint.PointType.Intersection)
                 {
                     //we can do both at once since we should have the same number of intersections
-                    fromMap.Add(point, to.IndexOf(point));
-                    toMap.Add(point, i);
+
+                    for (int j = 0; j < to.Count; j++)
+                    {
+                        if(to[j].p == point.p) fromMap.Add(point.p, j);
+                    }
+                    toMap.Add(point.p, i);
                 }
             }
         }

@@ -10,6 +10,8 @@ namespace WeilerAtherton
         public PointF p;
         public PointType type;
         public PointStatus status;
+        public bool overlap = false;
+        public PointStatus tempStatus;
 
         public List<DeepPoint> intersections;
 
@@ -58,6 +60,12 @@ namespace WeilerAtherton
         public static float DistanceSquared(DeepPoint p1, DeepPoint p2)
         {
             return (p2.p.X - p1.p.X) * (p2.p.X - p1.p.X) + (p2.p.Y - p1.p.Y) * (p2.p.Y - p1.p.Y);
+        }
+
+        //Distance
+        public static float Distance(PointF p1, PointF p2)
+        {
+            return (float)Math.Sqrt((p2.X - p1.X) * (p2.X - p1.X) + (p2.Y - p1.Y) * (p2.Y - p1.Y));
         }
     }
     

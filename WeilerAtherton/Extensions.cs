@@ -20,8 +20,8 @@ namespace WeilerAtherton
                 if (p.Y < outside.Y) outside.Y = p.Y;
             }
 
-            outside.X--;
-            outside.Y--;
+            outside.X-=7;
+            outside.Y-=13;
 
             HashSet<PointF> intersections = new HashSet<PointF>();
 
@@ -32,8 +32,12 @@ namespace WeilerAtherton
                 PointF c2 = shape[(i + 1) % shape.Length];
 
                 //if our point is the same as one of the shape points, we consider it inside the shape
-                if(point == c1 || point == c2) return DeepPoint.PointStatus.In;
+                //if(point == c1 || point == c2) return DeepPoint.PointStatus.In;
 
+                Console.WriteLine("{0} == {1}", DeepPoint.Distance(point, c1) + DeepPoint.Distance(point, c2), DeepPoint.Distance(c1, c2));
+                if (DeepPoint.Distance(point, c1) + DeepPoint.Distance(point, c2) == DeepPoint.Distance(c1, c2)) return DeepPoint.PointStatus.In; //TODO: mark it as border
+
+                
                 float det;
                 float A1, B1, C1;
                 float A2, B2, C2;
@@ -84,6 +88,26 @@ namespace WeilerAtherton
             //covers 0 + evens
             if (intersectionCount % 2 == 0) return DeepPoint.PointStatus.Out;
             else return DeepPoint.PointStatus.In; //odds > 0
+        }
+
+        public static T NextAfter<T>(this List<T> list, int i)
+        {
+            return list[(i + 1) % list.Count];
+        }
+
+        public static int IndexAfter<T>(this List<T> list, int i)
+        {
+            return (i + 1) % list.Count;
+        }
+
+        public static T PrevBefore<T>(this List<T> list, int i)
+        {
+            return list[((i - 1) + list.Count) % list.Count];
+        }
+
+        public static int PrevIndex<T>(this List<T> list, int i)
+        {
+            return ((i - 1) + list.Count) % list.Count;
         }
     }
 }
