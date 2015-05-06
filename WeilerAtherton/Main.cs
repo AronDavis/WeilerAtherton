@@ -11,8 +11,17 @@ using System.Windows.Forms;
 namespace WeilerAtherton
 {
     /* TEST CASES
-     0,0|100,100|200,100|200,200|300,300|100,200||150,50|300,100|175,250|150,250
-     0,0|100,100|200,100|200,200|300,300|100,200||0,0|100,100|200,100|200,200|300,300|100,200
+        0,0/100,100/200,100/200,200/300,300/100,200//150,50/300,100/175,250/150,250
+        0,0/100,100/200,100/200,200/300,300/100,200//0,0/100,100/200,100/200,200/300,300/100,200
+      
+        100,300/400,300/400,600//300,100/600,300/400,600  (1)
+        100,300/400,300/400,600//300,100/400,300/400,600  (2)
+        100,300/400,300/400,600//100,300/400,300/400,600  (3)
+        100,100/400,100/400,400//100,300/400,100/200,400  (4)
+        100,200/400,200/400,500//300,300/400,200/400,500  (5)
+        100,200/400,200/400,500//100,200/500,100/500,800  (6)
+        100,200/400,200/400,400//100,200/200,400/100,400  (7)
+        100,200/300,200/200,400//300,200/400,400/200,400  (8)
      */
 
     public partial class Main : Form
@@ -24,16 +33,16 @@ namespace WeilerAtherton
             InitializeComponent();
             g = this.CreateGraphics();
             pen = new Pen(Color.Red, 2);
-            txtInput.Text = "100,100|200,100|200,200|100,200||150,50|175,50|175,250|150,250";
+            txtInput.Text = "100,100/200,100/|200,200/100,200//150,50/175,50/175,250/150,250";
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
             g.Clear(Color.White);
-            string[] lists = txtInput.Text.Split(new string[] { "||" }, StringSplitOptions.None);
+            string[] lists = txtInput.Text.Split(new string[] { "//" }, StringSplitOptions.None);
 
-            string[] first = lists[0].Split('|');
-            string[] second = lists[1].Split('|');
+            string[] first = lists[0].Split('/');
+            string[] second = lists[1].Split('/');
 
             PointF[] clip = convert(first);
             PointF[] shape = convert(second);
