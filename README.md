@@ -1,9 +1,9 @@
 # WeilerAtherton
 Implementation of the Weiler Atherton Polygon Clipping Algorithm.  This particular implementation is designed with the intent of creating useful visual feedback.
 
-Input should be two shapes separated by "||".  Shapes should be points separated by "|".  Points should be X and Y values separated by ",".  Points should be listed in clockwise order.
+Input should be two shapes separated by "//".  Shapes should be points separated by "/".  Points should be X and Y values separated by ",".  Points should be listed in clockwise order.
 
-Sample input: 0,0|1,0|1,1|0,1||0,0|1,0|1,1|0,1
+Sample input: 0,0/1,0/1,1/0,1//0,0/1,0/1,1/0,1
 
 
 WORK IN PROGRESS
