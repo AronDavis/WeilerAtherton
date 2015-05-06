@@ -111,7 +111,13 @@ namespace WeilerAtherton
                                 }
                                 else if (inter != p2.p && inter != c1.p && inter != c2.p)
                                 {
-                                    p1.intersections.Add(intersection);
+                                    if (inter == p1.p)
+                                    {
+                                        p1.overlap = true;
+                                        p1.type = DeepPoint.PointType.Intersection;
+                                    }
+                                    else p1.intersections.Add(intersection);
+
                                     c1.intersections.Add(intersection);
                                 }
                             }
